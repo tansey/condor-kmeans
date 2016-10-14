@@ -5,8 +5,8 @@ import numpy.ma as ma
 import argparse
 import csv
 import time
-from vector import VectorStream
-from utils import make_directory
+from condor_kmeans.vector import VectorStream
+from condor_kmeans.utils import make_directory
 
 FIND_CLUSTER_MAP_HEADER = '''universe = vanilla
 Executable=/lusr/bin/python
@@ -18,7 +18,7 @@ getenv = True
 
 '''
 
-FIND_CLUSTER_MAP_JOB = '''Arguments = diet2vec/clustering/condor.py {worker_id} {step} {data_filename} {start} {end} {weights_filename} {centroids_filename} {assignments_outfile} {mindistance_outfile}
+FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} {worker_id} {step} {data_filename} {start} {end} {weights_filename} {centroids_filename} {assignments_outfile} {mindistance_outfile}
 Output = {output_filename}
 Error = {error_filename}
 Queue 1
@@ -36,7 +36,7 @@ class CondorKmeansPool(object):
 
     def map_find_nearest_cluster(self, step, data, weights, centroids, assignments, min_distances, assign=True):
         # Create a map for use in pretty string formatting for the jobs file
-        dargs = {'username': self._username, 'step': step, 'base_dir': self._base_dir }
+        dargs = {'username': self._username, 'step': step, 'base_dir': self._base_dir, 'python_filepath': os.path.abspath(__file__) }
 
         # Get the location of the data
         if data is VectorStream:
@@ -180,7 +180,7 @@ def condor_find_nearest_cluster(condor_username, data, weights, centroids, assig
 
     return min_distances
 
-if __name__ == '__main__':
+def worker_main():
     worker_id = int(sys.argv[1])
     step = int(sys.argv[2])
     data_filename = sys.argv[3]
@@ -224,7 +224,8 @@ if __name__ == '__main__':
 
     print 'Success!'
 
-    
+if __name__ == '__main__':
+    worker_main()
     
 
 

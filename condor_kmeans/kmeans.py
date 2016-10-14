@@ -24,8 +24,8 @@ import collections
 import argparse
 import csv
 from multiprocessing import Pool
-from vector import VectorStream
-from condor import condor_find_nearest_cluster
+from condor_kmeans.vector import VectorStream
+from condor_kmeans.condor import condor_find_nearest_cluster
 
 def calc_distances(x, centroids, weights):
     '''
@@ -345,7 +345,7 @@ def save_centroids(centroids, filename):
         writer.writerow(centroids.shape)
         writer.writerows(centroids)
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Performs parallel weighted K-means++ vectors.')
     
     # The parameters
@@ -399,4 +399,9 @@ if __name__ == '__main__':
 
     print 'Saving assignments to {0}'.format(args.cluster_assignments_outfile)
     np.savetxt(args.cluster_assignments_outfile, assignments, delimiter=',', fmt='%d')
+
+
+if __name__ == '__main__':
+    main()
+
 
