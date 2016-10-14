@@ -392,7 +392,7 @@ def main():
                                              condor_pollwait=args.condor_pollwait)
     
     print 'Saving cluster centroids to {0}'.format(args.cluster_centroids_outfile)
-    save_centroids(centroids, args.cluster_centroids_outfile)
+    np.savetxt(args.cluster_centroids_outfile, centroids, delimiter=',')
 
     print 'Saving assignments to {0}'.format(args.cluster_assignments_outfile)
     np.savetxt(args.cluster_assignments_outfile, assignments, delimiter=',', fmt='%d')

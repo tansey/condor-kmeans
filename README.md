@@ -1,4 +1,9 @@
-# A Condor-powered K-means implementation
+A Condor-powered K-means implementation
+---------------------------------------
+<p align="center">
+  <img src="https://github.com/tansey/condor-kmeans/blob/master/test/results.png?raw=true" alt="Example K-means Solution"/>
+</p>
+
 
 This package lets you run K-means on a really big dataset of vectors. You can even stream the vectors instead of loading them into memory, so long as you can store two lists of doubles the size of your vector count (one list for cluster assignment IDs and one for distance from each vector to its cluster).
 
