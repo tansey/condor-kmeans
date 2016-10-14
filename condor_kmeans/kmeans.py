@@ -17,9 +17,6 @@ The word2vec dimensions have a single weight associated with them.
 import sys
 import numpy as np
 import numpy.ma as ma
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import collections
 import argparse
 import csv

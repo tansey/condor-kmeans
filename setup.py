@@ -19,7 +19,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='condor-kmeans',
-    version='0.0.1',
+    version='0.9',
     description='A package for running k-means on a Condor cluster',
     long_description=long_description,
     url='https://github.com/tansey/condor-kmeans',
@@ -36,7 +36,7 @@ setup(
     ],
     keywords='statistics machinelearning clustering kmeans condor',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    install_requires=['numpy', 'scipy'],
+    install_requires=['numpy'],
     package_data={
         'condor_kmeans': [],
     },
