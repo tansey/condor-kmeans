@@ -19,7 +19,7 @@ if __name__ == '__main__':
     num_threads = 3
     num_workers = 21 # odd number just to test the rounding
     kmeans_assignments, centroids = weighted_kmeans(points, np.ones(2), num_clusters, max_steps, num_threads,
-                                                    pp_init=True, pp_reservoir_size=1000, pp_max=3,
+                                                    pp_init=False, pp_reservoir_size=1000, pp_max=3,
                                                     condor=True, condor_workers=num_workers, condor_pollwait=5,
                                                     condor_username=sys.argv[1])
     
