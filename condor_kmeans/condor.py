@@ -153,9 +153,9 @@ class CondorKmeansPool(object):
         print 'Workers finished. Aggregating results.'
 
         if assign:
-            updated_centroids = np.ma.masked_array(np.zeros(centroids.shape), mask=np.zeros(centroids.shape, dtype=int))
+            centroids = np.ma.masked_array(np.zeros(centroids.shape), mask=np.zeros(centroids.shape, dtype=int))
             updated_centroids_counts = np.zeros(centroids.shape[0])
-            print 'initial centroids: {0}'.format(updated_centroids.shape)
+            print 'initial centroids: {0}'.format(centroids.shape)
 
         # All the workers are finished. Merge the results back
         for i, (start, end) in enumerate(worker_ranges):
@@ -177,11 +177,13 @@ class CondorKmeansPool(object):
                 partial_centroids_counts = np.loadtxt(dargs['partial_centroids_counts_outfile'], delimiter=',')
                 # Calculate a running mean for the cluster centers
                 next_counts = updated_centroids_counts + partial_centroids_counts
-                updated_centroids = (updated_centroids * (updated_centroids_counts / next_counts.clip(1))[:,np.newaxis]
+                centroids = (centroids * (updated_centroids_counts / next_counts.clip(1))[:,np.newaxis]
                                      + partial_centroids * (partial_centroids_counts / next_counts.clip(1))[:,np.newaxis])
                 updated_centroids_counts = next_counts
+                print 'partial_centroids: {0}'.format(partial_centroids.shape)
+                print 'partial_centroids_counts: {0}'.format(partial_centroids_counts)
                 print 'next counts: {0}'.format(next_counts.shape)
-                print 'centroids: {0}'.format(updated_centroids.shape)
+                print 'centroids: {0}'.format(centroids.shape)
 
             # Clean up
             os.remove(dargs['assignments_outfile'])
@@ -196,9 +198,6 @@ class CondorKmeansPool(object):
         # If we had to write the data to file, delete the temp file
         if data is not VectorStream:
             os.remove(dargs['data_filename'])
-
-        if assign:
-            return updated_centroids
 
 
 def condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, num_workers, step, assign=True, polling_delay=30):
