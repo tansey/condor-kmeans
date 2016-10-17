@@ -244,27 +244,26 @@ def worker_main():
         print 'Quit due to error'
         exit(1)
 
-    if assign:
-        try:
-            # Calculate the cluster centroids and counts
-            print 'Calculating partial centroids'
-            partial_centroids = np.zeros(centroids.shape)
-            centroid_counts = np.zeros(end - start)
-            assign_idx = 0
-            for i, x in enumerate(data):
-                if i < start:
-                    continue
-                if i >= end:
-                    break
-                centroid_idx = assignments[assign_idx]
-                partial_centroids[centroid_idx] += x
-                centroid_counts[centroid_idx] += 1
-                assign_idx += 1
-            partial_centroids = partial_centroids / centroid_counts[:,np.newaxis]
-        except Exception as ex:
-            print 'Error calculating partial centroids: {0}'.format(ex)
-            print 'Quit due to error'
-            exit(1)
+    try:
+        # Calculate the cluster centroids and counts
+        print 'Calculating partial centroids'
+        partial_centroids = np.zeros(centroids.shape)
+        centroid_counts = np.zeros(end - start)
+        assign_idx = 0
+        for i, x in enumerate(data):
+            if i < start:
+                continue
+            if i >= end:
+                break
+            centroid_idx = assignments[assign_idx]
+            partial_centroids[centroid_idx] += x
+            centroid_counts[centroid_idx] += 1
+            assign_idx += 1
+        partial_centroids = partial_centroids / centroid_counts[:,np.newaxis]
+    except Exception as ex:
+        print 'Error calculating partial centroids: {0}'.format(ex)
+        print 'Quit due to error'
+        exit(1)
 
     try:
         np.savetxt(assignments_outfile, assignments, delimiter=',')
