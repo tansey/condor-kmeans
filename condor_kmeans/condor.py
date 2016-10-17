@@ -92,6 +92,8 @@ class CondorKmeansPool(object):
         # Submit the job to condor. Fuck using subprocess at the moment
         os.system('condor_submit {jobs_filename}'.format(**dargs))
 
+        print 'Jobs submitted. Polling for completion...'
+
         # Flag to keep waiting
         poll = True
 
@@ -146,6 +148,8 @@ class CondorKmeansPool(object):
                         # If the worker hasn't finished writing its output file, chill some more
                         poll = True
                         break
+
+        print 'Workers finished. Aggregating results.'
 
         if assign:
             updated_centroids = np.ma.zeros(centroids.shape, mask=np.zeros(centroids.shape, dtype=int))
@@ -243,6 +247,7 @@ def worker_main():
     if assign:
         try:
             # Calculate the cluster centroids and counts
+            print 'Calculating partial centroids'
             partial_centroids = np.zeros(centroids.shape)
             centroid_counts = np.zeros(end - start)
             assign_idx = 0
