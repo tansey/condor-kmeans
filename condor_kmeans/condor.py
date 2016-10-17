@@ -152,7 +152,7 @@ class CondorKmeansPool(object):
         print 'Workers finished. Aggregating results.'
 
         if assign:
-            updated_centroids = np.ma.zeros(centroids.shape, mask=np.zeros(centroids.shape, dtype=int))
+            updated_centroids = np.ma.masked_array(np.zeros(centroids.shape), mask=np.zeros(centroids.shape, dtype=int))
             updated_centroids_counts = np.zeros(centroids.shape[0])
 
         # All the workers are finished. Merge the results back
