@@ -18,7 +18,7 @@ getenv = True
 
 '''
 
-FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} {worker_id} {step} {data_filename} {start} {end} {weights_filename} {centroids_filename} {assignments_outfile} {mindistance_outfile}
+FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker {worker_id} {step} {data_filename} {start} {end} {weights_filename} {centroids_filename} {assignments_outfile} {mindistance_outfile} {partial_centroids_outfile} {partial_centroids_counts_outfile}
 Output = {output_filename}
 Error = {error_filename}
 Queue 1
@@ -51,6 +51,8 @@ class CondorKmeansPool(object):
         dargs['error_dir'] = make_directory(self._base_dir, 'error')
         dargs['assignments_dir'] = make_directory(self._data_dir, 'assignments')
         dargs['mindistance_dir'] = make_directory(self._data_dir, 'mindistance')
+        dargs['partial_centroids_dir'] = make_directory(self._data_dir, 'partial_centroids')
+        dargs['partial_centroids_counts_dir'] = make_directory(self._data_dir, 'partial_centroids_counts')
 
         # Write the weights to file
         dargs['weights_filename'] = self._data_dir + 'weights.csv'
@@ -81,6 +83,8 @@ class CondorKmeansPool(object):
                 dargs['end'] = end
                 dargs['assignments_outfile'] = '{assignments_dir}{worker_id}.csv'.format(**dargs)
                 dargs['mindistance_outfile'] = '{mindistance_dir}{worker_id}.csv'.format(**dargs)
+                dargs['partial_centroids_outfile'] = '{partial_centroids_dir}{worker_id}.csv'.format(**dargs)
+                dargs['partial_centroids_counts_outfile'] = '{partial_centroids_counts_dir}{worker_id}.csv'.format(**dargs)
                 dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}.out'.format(**dargs)
                 dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}.err'.format(**dargs)
                 f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
@@ -106,6 +110,8 @@ class CondorKmeansPool(object):
                 dargs['end'] = end
                 dargs['assignments_outfile'] = '{assignments_dir}{worker_id}.csv'.format(**dargs)
                 dargs['mindistance_outfile'] = '{mindistance_dir}{worker_id}.csv'.format(**dargs)
+                dargs['partial_centroids_outfile'] = '{partial_centroids_dir}{worker_id}.csv'.format(**dargs)
+                dargs['partial_centroids_counts_outfile'] = '{partial_centroids_counts_dir}{worker_id}.csv'.format(**dargs)
                 dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}.out'.format(**dargs)
                 dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}.err'.format(**dargs)
 
@@ -141,6 +147,10 @@ class CondorKmeansPool(object):
                         poll = True
                         break
 
+        if assign:
+            updated_centroids = np.zeros(centroids.shape)
+            updated_centroids_counts = np.zeros(centroids.shape[0])
+
         # All the workers are finished. Merge the results back
         for i, (start, end) in enumerate(worker_ranges):
             dargs['worker_id'] = i
@@ -148,6 +158,8 @@ class CondorKmeansPool(object):
             dargs['end'] = end
             dargs['assignments_outfile'] = '{assignments_dir}{worker_id}.csv'.format(**dargs)
             dargs['mindistance_outfile'] = '{mindistance_dir}{worker_id}.csv'.format(**dargs)
+            dargs['partial_centroids_outfile'] = '{partial_centroids_dir}{worker_id}.csv'.format(**dargs)
+            dargs['partial_centroids_counts_outfile'] = '{partial_centroids_counts_dir}{worker_id}.csv'.format(**dargs)
             dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}.out'.format(**dargs)
             dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}.err'.format(**dargs)
 
@@ -155,10 +167,19 @@ class CondorKmeansPool(object):
             min_distances[start:end] = np.loadtxt(dargs['mindistance_outfile'], delimiter=',')
             if assign:
                 assignments[start:end] = np.loadtxt(dargs['assignments_outfile'], delimiter=',')
+                partial_centroids = np.loadtxt(dargs['partial_centroids_outfile'], delimiter=',')
+                partial_centroids_counts = np.loadtxt(dargs['partial_centroids_counts_outfile'], delimiter=',')
+                # Calculate a running mean for the cluster centers
+                next_counts = updated_centroids_counts + partial_centroids_counts
+                updated_centroids = (updated_centroids * (updated_centroids_counts / next_counts.clip(1))[:,np.newaxis]
+                                     + partial_centroids * (partial_centroids_counts / next_counts.clip(1))[:,np.newaxis])
+                updated_centroids_counts = next_counts
 
             # Clean up
             os.remove(dargs['assignments_outfile'])
             os.remove(dargs['mindistance_outfile'])
+            os.remove(dargs['partial_centroids_outfile'])
+            os.remove(dargs['partial_centroids_counts_outfile'])
             os.remove(dargs['output_filename'])
             os.remove(dargs['error_filename'])
 
@@ -181,15 +202,17 @@ def condor_find_nearest_cluster(condor_username, data, weights, centroids, assig
     return min_distances
 
 def worker_main():
-    worker_id = int(sys.argv[1])
-    step = int(sys.argv[2])
-    data_filename = sys.argv[3]
-    start = int(sys.argv[4])
-    end = int(sys.argv[5])
-    weights_filename = sys.argv[6]
-    centroids_filename = sys.argv[7]
-    assignments_outfile = sys.argv[8]
-    mindistance_outfile = sys.argv[9]
+    worker_id = int(sys.argv[2])
+    step = int(sys.argv[3])
+    data_filename = sys.argv[4]
+    start = int(sys.argv[5])
+    end = int(sys.argv[6])
+    weights_filename = sys.argv[7]
+    centroids_filename = sys.argv[8]
+    assignments_outfile = sys.argv[9]
+    mindistance_outfile = sys.argv[10]
+    partial_centroids_outfile = sys.argv[11]
+    partial_centroids_counts_outfile = sys.argv[12]
 
     try:
         data = VectorStream(data_filename)
@@ -214,9 +237,32 @@ def worker_main():
         print 'Quit due to error'
         exit(1)
 
+    if assign:
+        try:
+            # Calculate the cluster centroids and counts
+            partial_centroids = np.zeros(centroids.shape)
+            centroid_counts = np.zeros(end - start)
+            assign_idx = 0
+            for i, x in enumerate(data):
+                if i < start:
+                    continue
+                if i >= end:
+                    break
+                centroid_idx = assignments[assign_idx]
+                partial_centroids[centroid_idx] += x
+                centroid_counts[centroid_idx] += 1
+                assign_idx += 1
+            partial_centroids = partial_centroids / centroid_counts[:,np.newaxis]
+        except Exception as ex:
+            print 'Error calculating partial centroids: {0}'.format(ex)
+            print 'Quit due to error'
+            exit(1)
+
     try:
         np.savetxt(assignments_outfile, assignments, delimiter=',')
         np.savetxt(mindistance_outfile, min_distances, delimiter=',')
+        np.savetxt(partial_centroids_outfile, partial_centroids, delimiter=',')
+        np.savetxt(partial_centroids_counts_outfile, centroid_counts, delimiter=',')
     except Exception as ex:
         print 'Error saving files: {0}'.format(ex)
         print 'Quit due to error'
@@ -225,7 +271,10 @@ def worker_main():
     print 'Success!'
 
 if __name__ == '__main__':
-    worker_main()
+    if sys.argv[1] == 'worker':
+        worker_main()
+    elif sys.argv[1] == 'aggregate':
+        aggregate_main()
     
 
 

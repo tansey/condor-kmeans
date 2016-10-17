@@ -356,7 +356,10 @@ def main():
     parser.add_argument('--stream', dest='stream', action='store_true', help='Stream the data rather than loading it all into memory.')
     parser.add_argument('--missing', default='', help='The missing value string for the vectors file.')
 
-    # K-menas++ parameters
+    # Optionally specify the centroids file to start with
+    parser.add_argument('--centroids', help='The file containing the initial centroids. Initialization will be skipped if this is specified.')
+
+    # K-means++ parameters
     parser.add_argument('--plusplus', '--pp', dest='plusplus', action='store_true', help='Use K-means++ to initialize the clusters.')
     parser.add_argument('--pp_reservoir', type=int, default=1000000, help='The reservoir size for K-means++ initialization.')
     parser.add_argument('--pp_max', type=int, default=100, help='The maximum number of steps to fully recalculate distances when using K-means++ initialization. After pp_max clusters, the remaining clusters will be sampled proportional to the last weight updates.')
@@ -382,10 +385,17 @@ def main():
 
     assert vectors.shape[1] == weights.shape[0]
 
+    if args.centroids:
+        print 'Loading centroids from {0}'.format(args.centroids)
+        centroids = np.loadtxt(args.centroids, delimiter=',')
+    else:
+        centroids = None
+
     print 'Clustering vectors'
     assignments, centroids = weighted_kmeans(vectors, weights, args.num_clusters,
                                              args.max_steps, args.num_threads,
                                              stream=args.stream, pp_init=args.plusplus,
+                                             centroids=centroids,
                                              pp_reservoir_size=args.pp_reservoir, pp_max=args.pp_max,
                                              condor=args.condor, condor_username=args.condor_username,
                                              condor_workers=args.condor_workers,
