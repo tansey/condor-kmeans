@@ -228,6 +228,13 @@ def worker_main():
         centroids = np.loadtxt(centroids_filename, delimiter=',')
         assignments = np.zeros(end-start, dtype=int) - 1
 
+        print 'Shapes:'
+        print 'data: {0}'.format(data.shape)
+        print 'weights: {0}'.format(weights.shape)
+        print 'centroids: {0}'.format(centroids.shape)
+        print 'assignments: {0}'.format(assignments.shape)
+        print ''
+
         if len(centroids.shape) == 1:
             centroids = centroids[:, np.newaxis].T
     except Exception as ex:
