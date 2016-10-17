@@ -248,7 +248,7 @@ def worker_main():
         # Calculate the cluster centroids and counts
         print 'Calculating partial centroids'
         partial_centroids = np.zeros(centroids.shape)
-        centroid_counts = np.zeros(end - start)
+        centroid_counts = np.zeros(centroids.shape[0])
         assign_idx = 0
         for i, x in enumerate(data):
             if i < start:
