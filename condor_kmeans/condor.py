@@ -5,6 +5,7 @@ import numpy.ma as ma
 import argparse
 import csv
 import time
+import traceback
 from condor_kmeans.vector import VectorStream
 from condor_kmeans.utils import make_directory
 
@@ -230,6 +231,7 @@ def worker_main():
         if len(centroids.shape) == 1:
             centroids = centroids[:, np.newaxis].T
     except Exception as ex:
+        print traceback.format_exc()
         print 'Error loading files: {0}'.format(ex)
         print 'Quit due to error'
         exit(1)
@@ -240,6 +242,7 @@ def worker_main():
         all_params = (step, data, start, end, weights, centroids, assignments, worker_id)
         (worker_id, assignments, min_distances) = find_nearest_cluster(all_params)
     except Exception as ex:
+        print traceback.format_exc()
         print 'Error finding nearest cluster: {0}'.format(ex)
         print 'Quit due to error'
         exit(1)
@@ -247,7 +250,7 @@ def worker_main():
     try:
         # Calculate the cluster centroids and counts
         print 'Calculating partial centroids'
-        partial_centroids = np.zeros(centroids.shape)
+        partial_centroids = np.ma.masked_array(np.zeros(centroids.shape), mask=np.zeros(centroids.shape, dtype=int))
         centroid_counts = np.zeros(centroids.shape[0])
         assign_idx = 0
         for i, x in enumerate(data):
@@ -261,6 +264,7 @@ def worker_main():
             assign_idx += 1
         partial_centroids = partial_centroids / centroid_counts[:,np.newaxis]
     except Exception as ex:
+        print traceback.format_exc()
         print 'Error calculating partial centroids: {0}'.format(ex)
         print 'Quit due to error'
         exit(1)
@@ -271,6 +275,7 @@ def worker_main():
         np.savetxt(partial_centroids_outfile, partial_centroids, delimiter=',')
         np.savetxt(partial_centroids_counts_outfile, centroid_counts, delimiter=',')
     except Exception as ex:
+        print traceback.format_exc()
         print 'Error saving files: {0}'.format(ex)
         print 'Quit due to error'
         exit(1)
