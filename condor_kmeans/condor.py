@@ -148,7 +148,7 @@ class CondorKmeansPool(object):
                         break
 
         if assign:
-            updated_centroids = np.zeros(centroids.shape)
+            updated_centroids = np.ma.zeros(centroids.shape, mask=np.zeros(centroids.shape, dtype=int))
             updated_centroids_counts = np.zeros(centroids.shape[0])
 
         # All the workers are finished. Merge the results back
@@ -188,6 +188,9 @@ class CondorKmeansPool(object):
         # If we had to write the data to file, delete the temp file
         if data is not VectorStream:
             os.remove(dargs['data_filename'])
+
+        if assign:
+            return updated_centroids
 
 
 def condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, num_workers, step, assign=True, polling_delay=30):

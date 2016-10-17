@@ -304,22 +304,21 @@ def weighted_kmeans(data, weights, k, max_steps, num_threads=4, centroids=None,
 
         # Find the assignments for each of the data points
         if condor:
-            condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, condor_workers, step, polling_delay=condor_pollwait)
+            centroids = condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, condor_workers, step, polling_delay=condor_pollwait)
         else:
             parallel_find_nearest_cluster(data, weights, centroids, assignments, num_threads, step)
-        
-        # Recalculate all the cluster centroids
-        if stream:
-            # If we're streaming, it means we want to minimize loops over the data
-            centroids = streaming_centroids(data, assignments, k)
-        else:
-            for i in xrange(k):
-                # Take the mean of every dimension.
-                centroids[i] = data[assignments==i].mean(axis=0)
+            # Recalculate all the cluster centroids
+            if stream:
+                # If we're streaming, it means we want to minimize loops over the data
+                centroids = streaming_centroids(data, assignments, k)
+            else:
+                for i in xrange(k):
+                    # Take the mean of every dimension.
+                    centroids[i] = data[assignments==i].mean(axis=0)
 
-        # Set missing dimensions to zero, since we assume all dimensions
-        # are standardized to zero-mean.
-        centroids[centroids.mask] = 0.
+            # Set missing dimensions to zero, since we assume all dimensions
+            # are standardized to zero-mean.
+            centroids[centroids.mask] = 0.
 
         print 'First few assignments: {0}'.format(assignments[0:20])
         print 'Cluster sizes: {0}'.format(np.bincount(assignments))
