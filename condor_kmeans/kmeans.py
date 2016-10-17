@@ -304,7 +304,7 @@ def weighted_kmeans(data, weights, k, max_steps, num_threads=4, centroids=None,
 
         # Find the assignments for each of the data points
         if condor:
-            centroids = condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, condor_workers, step, polling_delay=condor_pollwait)
+            condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, condor_workers, step, polling_delay=condor_pollwait)
             print 'Centroids: {0}'.format(centroids.shape)
         else:
             parallel_find_nearest_cluster(data, weights, centroids, assignments, num_threads, step)
