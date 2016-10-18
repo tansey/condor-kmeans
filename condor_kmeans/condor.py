@@ -145,8 +145,6 @@ class CondorKmeans(object):
         # Generate all the job scripts
         dag_parents = ''
         dag_jobvars = ''
-        subdag_parents = ''
-        subdag_jobvars = ''
         with open(dargs['dagman_filename'], 'wb') as dagf:
             # Write the top-level dag for the steps
             for step in xrange(self._max_steps):
@@ -158,6 +156,8 @@ class CondorKmeans(object):
                     dargs['next_step'] = step + 1
                     dag_parents += 'PARENT STEP{next_step} CHILD {job_id}\n'.format(**dargs)
 
+                subdag_parents = ''
+                subdag_jobvars = ''
                 with open(dargs['subdag_filename'], 'wb') as subdagf:
                     # Write the sub-dag that handles each worker in a given step
                     for i, (start, end) in enumerate(worker_ranges):
