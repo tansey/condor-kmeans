@@ -88,9 +88,9 @@ class CondorKmeans(object):
         dargs['partial_centroids_counts_outfile'] = '{partial_centroids_counts_dir}{worker_id}.csv'.format(**dargs)
         dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}_step{step}.out'.format(**dargs)
         dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}_step{step}.err'.format(**dargs)
-        dargs['jobs_filename'] = '{job_dir}find_nearest_cluster_jobs_step{step}'.format(**dargs)
-        dargs['agg_output_filename'] = '{output_dir}aggregate_{worker_id}_step{step}.out'.format(**dargs)
-        dargs['agg_error_filename'] = '{error_dir}aggregate_{worker_id}_step{step}.err'.format(**dargs)
+        dargs['jobs_filename'] = '{job_dir}find_nearest_cluster_jobs_step{step}_worker{worker_id}'.format(**dargs)
+        dargs['agg_output_filename'] = '{output_dir}aggregate_step{step}.out'.format(**dargs)
+        dargs['agg_error_filename'] = '{error_dir}aggregate_step{step}.err'.format(**dargs)
         dargs['aggjob_filename'] = '{job_dir}aggregate{step}'.format(**dargs)
         dargs['dagman_filename'] = '{job_dir}dag'.format(**dargs)
         dargs['finished_flag'] = '{output_dir}finished'.format(**dargs)
@@ -131,17 +131,15 @@ class CondorKmeans(object):
 
             for step in xrange(max_steps):
                 dargs = self._get_dargs(step, data)
-                # Open up a jobs file
-                with open(dargs['jobs_filename'], 'wb') as f:
-                    # Write the header to the top of the file
-                    f.write(JOB_HEADER.format(**dargs))
-
-                    # Write each worker's job to file
-                    for i, (start, end) in enumerate(worker_ranges):
-                        dargs = self._get_dargs(step, data, i, start, end)
+                # Write each worker's job to file
+                for i, (start, end) in enumerate(worker_ranges):
+                    dargs = self._get_dargs(step, data, i, start, end)
+                    # Open up a jobs file
+                    with open(dargs['jobs_filename'], 'wb') as f:
+                        f.write(JOB_HEADER.format(**dargs))
                         f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
-
-                dagf.write('JOB FINDCLUSTERS{step} {jobs_filename}\n'.format(**dargs))
+                        dagf.write('JOB FINDCLUSTERS{step} {jobs_filename}\n'.format(**dargs))
+                        parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{step}WORKER{worker_id}\n'.format(**dargs)
 
                 with open(dargs['aggjob_filename'], 'wb') as f:
                     # Write the header to the top of the file
@@ -151,7 +149,7 @@ class CondorKmeans(object):
                     f.write(AGGREGATE_JOB.format(**dargs))
 
                 dagf.write('JOB AGG{step} {aggjob_filename}\n'.format(**dargs))
-                parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{step}\n'.format(**dargs)
+                
 
             # Write all the dependencies
             dagf.write(parents)
