@@ -346,13 +346,12 @@ def worker_main():
 def aggregate_main():
     step = int(sys.argv[2])
     data_filename = sys.argv[3]
-    weights_filename = sys.argv[4]
-    username = sys.argv[5]
-    num_workers = int(sys.argv[6])
-    working_dir = sys.argv[7]
-    finished_flag = sys.argv[8]
-    final_centroids_outfile = sys.argv[9]
-    final_assignments_outfile = sys.argv[10]
+    username = sys.argv[4]
+    num_workers = int(sys.argv[5])
+    working_dir = sys.argv[6]
+    finished_flag = sys.argv[7]
+    final_centroids_outfile = sys.argv[8]
+    final_assignments_outfile = sys.argv[9]
 
     if os.path.exists(finished_flag):
         exit(0)
