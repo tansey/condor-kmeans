@@ -389,10 +389,8 @@ def main():
 
         print 'Submitting Condor DAG jobs with maximum of {0} iterations'.format(args.max_steps)
         pool.weighted_kmeans(vectors, weights, args.num_clusters,
-                             args.num_threads,
-                             stream=args.stream, pp_init=args.plusplus,
-                             centroids=centroids,
-                             pp_reservoir_size=args.pp_reservoir, pp_max=args.pp_max)
+                             num_threads=args.num_threads,
+                             centroids=centroids)
     else:
         assignments, centroids = weighted_kmeans(vectors, weights, args.num_clusters,
                                              args.max_steps, args.num_threads,
