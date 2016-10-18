@@ -132,7 +132,7 @@ class CondorKmeans(object):
                 # If we're given some centroids, use those instead
                 np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
 
-            for step in xrange(max_steps):
+            for step in xrange(self._max_steps):
                 dargs = self._get_dargs(step, data)
                 # Write each worker's job to file
                 for i, (start, end) in enumerate(worker_ranges):
@@ -143,7 +143,7 @@ class CondorKmeans(object):
                         f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
                         dagf.write('JOB FINDCLUSTERS{step}WORKER{worker_id} {jobs_filename}\n'.format(**dargs))
                         parents += 'PARENT FINDCLUSTERS{step}WORKER{worker_id} CHILD AGG{step}\n'.format(**dargs)
-                        if step < (max_steps-1):
+                        if step < (self._max_steps-1):
                             dargs['next_step'] = step + 1
                             parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{next_step}WORKER{worker_id}\n'.format(**dargs)
 
