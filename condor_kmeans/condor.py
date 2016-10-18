@@ -209,7 +209,7 @@ class CondorKmeans(object):
         centroids = None            
 
         # All the workers are finished. Merge the results back
-        worker_ranges = self._get_worker_ranges(step, data)
+        worker_ranges = self._get_worker_ranges(data)
         for i, (start, end) in enumerate(worker_ranges):
             dargs = self._get_dargs(step, data, i, start, end)
 
