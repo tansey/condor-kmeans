@@ -57,6 +57,10 @@ class CondorKmeans(object):
     def _get_dargs(self, step, data, worker_id=0, start=0, end=0):
         # Create a map for use in string formatting for the jobs file
         dargs = {'username': self._username, 'base_dir': self._base_dir, 'python_filepath': os.path.abspath(__file__) }
+        dargs['step'] = step
+        dargs['worker_id'] = worker_id
+        dargs['start'] = start
+        dargs['end'] = end
         # Get the location of the data
         if data is VectorStream:
             dargs['data_filename'] = data._filename
@@ -75,10 +79,6 @@ class CondorKmeans(object):
         dargs['centroids_filename'] = self._data_dir + 'step{step}_centroids.csv'.format(**dargs)
         dargs['final_centroids_outfile'] = self._final_centroids_outfile
         dargs['final_assignments_outfile'] = self._final_assignments_outfile
-        dargs['step'] = step
-        dargs['worker_id'] = worker_id
-        dargs['start'] = start
-        dargs['end'] = end
         dargs['assignments_outfile'] = '{assignments_dir}{worker_id}.csv'.format(**dargs)
         dargs['mindistance_outfile'] = '{mindistance_dir}{worker_id}.csv'.format(**dargs)
         dargs['partial_centroids_outfile'] = '{partial_centroids_dir}{worker_id}.csv'.format(**dargs)
