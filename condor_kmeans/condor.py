@@ -206,7 +206,8 @@ class CondorKmeans(object):
         #centroids, assignments, min_distances
         min_distances = np.zeros(data.shape[0])
 
-        centroids = None            
+        centroids = None
+        assignments = None
 
         # All the workers are finished. Merge the results back
         worker_ranges = self._get_worker_ranges(data)
