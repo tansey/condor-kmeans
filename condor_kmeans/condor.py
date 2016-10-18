@@ -154,7 +154,7 @@ class CondorKmeans(object):
                 dag_jobvars += 'VARS {job_id} step="{step}"\n'.format(**dargs)
                 if step < (self._max_steps-1):
                     dargs['next_step'] = step + 1
-                    dag_parents += 'PARENT STEP{next_step} CHILD {job_id}\n'.format(**dargs)
+                    dag_parents += 'PARENT {job_id} CHILD STEP{next_step}\n'.format(**dargs)
 
                 subdag_parents = ''
                 subdag_jobvars = ''
