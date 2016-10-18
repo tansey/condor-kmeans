@@ -107,7 +107,7 @@ class CondorKmeans(object):
         dargs = self._get_dargs(0, data)
         # Get the location of the data
         if data is not VectorStream:
-            print 'Saving data to file'
+            print 'Data is of type {0}. Saving data to file'.format(type(data))
             # If we were given data in memory instead of in a stream, save it to file so it can be streamed
             np.savetxt(dargs['data_filename'], data, delimiter=',')
 
