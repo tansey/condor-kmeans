@@ -82,6 +82,7 @@ class CondorKmeans(object):
         dargs['partial_centroids_counts_dir'] = make_directory(self._data_dir, 'partial_centroids_counts')
         dargs['weights_filename'] = self._data_dir + 'weights.csv'
         dargs['centroids_filename'] = self._data_dir + 'step{step}_centroids.csv'.format(**dargs)
+        dargs['aggregated_assignments_filename'] = self._data_dir + 'step{step}_assignments.csv'.format(**dargs)
         dargs['assignments_outfile'] = '{assignments_dir}{worker_id}.csv'.format(**dargs)
         dargs['mindistance_outfile'] = '{mindistance_dir}{worker_id}.csv'.format(**dargs)
         dargs['partial_centroids_outfile'] = '{partial_centroids_dir}{worker_id}.csv'.format(**dargs)
