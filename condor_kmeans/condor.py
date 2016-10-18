@@ -19,7 +19,7 @@ getenv = True
 
 '''
 
-FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker $(workerid) $(step) {data_filename} {start} {end} {weights_filename} {centroids_filename} {assignments_outfile} {mindistance_outfile} {partial_centroids_outfile} {partial_centroids_counts_outfile} {finished_flag}
+FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker $(workerid) $(step) {data_filename} {start} {end} {weights_filename} {data_dir}step$(step)_centroids.csv {assignments_outfile} {mindistance_outfile} {partial_centroids_outfile} {partial_centroids_counts_outfile} {finished_flag}
 Output = {output_dir}find_nearest_cluster_$(workerid)_step$(step).out
 Error = {error_dir}find_nearest_cluster_$(workerid)_step$(step).err
 Queue 1
@@ -60,6 +60,7 @@ class CondorKmeans(object):
         # Create a map for use in string formatting for the jobs file
         dargs = {'username': self._username, 'base_dir': self._base_dir, 'python_filepath': os.path.abspath(__file__) }
         dargs['working_dir'] = self._working_dir
+        dargs['data_dir'] = self._data_dir
         dargs['num_workers'] = self._num_workers
         dargs['final_centroids_outfile'] = self._final_centroids_outfile
         dargs['final_assignments_outfile'] = self._final_assignments_outfile
