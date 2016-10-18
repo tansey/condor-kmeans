@@ -19,7 +19,7 @@ getenv = True
 
 '''
 
-FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker $(workerid) $(step) {data_filename} {start} {end} {weights_filename} {data_dir}step$(step)_centroids.csv {assignments_outfile} {mindistance_outfile} {partial_centroids_outfile} {partial_centroids_counts_outfile} {finished_flag}
+FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker $(workerid) $(step) {data_filename} {start} {end} {weights_filename} {data_dir}step$(step)_centroids.csv {assignments_dir}$(workerid).csv {mindistance_dir}$(workerid).csv {partial_centroids_dir}$(workerid).csv {partial_centroids_counts_dir}$(workerid).csv {finished_flag}
 Output = {output_dir}find_nearest_cluster_$(workerid)_step$(step).out
 Error = {error_dir}find_nearest_cluster_$(workerid)_step$(step).err
 Queue 1
@@ -347,6 +347,7 @@ def worker_main():
         exit(1)
 
     try:
+        print 'Writing min distances to {0}'.format(mindistance_outfile)
         np.savetxt(assignments_outfile, assignments, delimiter=',')
         np.savetxt(mindistance_outfile, min_distances, delimiter=',')
         np.savetxt(partial_centroids_outfile, partial_centroids, delimiter=',')
