@@ -173,7 +173,7 @@ class CondorKmeans(object):
                     subdag_jobvars += 'VARS {subdag_job_id} workerid="{worker_id}"\n'.format(**dargs)
                     subdag_jobvars += 'VARS {subdag_job_id} start="{start}"\n'.format(**dargs)
                     subdag_jobvars += 'VARS {subdag_job_id} end="{end}"\n'.format(**dargs)
-                    dag_parents += 'PARENT {subdag_job_id} CHILD AGG\n'.format(**dargs)
+                    subdag_parents += 'PARENT {subdag_job_id} CHILD AGG\n'.format(**dargs)
                 subdagf.write('JOB AGG {aggjob_filename}\n'.format(**dargs))
                 subdag_jobvars += 'VARS AGG step="$(step)"\n'.format(**dargs)
 
