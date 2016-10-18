@@ -247,11 +247,12 @@ class CondorKmeans(object):
             # os.remove(dargs['error_filename'])
 
         if assign:
-            np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
             np.savetxt(dargs['aggregated_assignments_filename'], assignments, delimiter=',')
+            dargs = self._get_dargs(step+1, data)
+            np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
 
             if step > 0:
-                dargs = self._get_dargs(step-1, data)
+                dargs = self._get_dargs(step, data)
                 prev_assignments = np.loadtxt(dargs['aggregated_assignments_filename'], delimiter=',')
                 # Check if we've converged to a local optimum.
                 if np.array_equal(prev_assignments, assignments):
