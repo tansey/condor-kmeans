@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 from condor_kmeans.condor import CondorKmeans
 
