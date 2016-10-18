@@ -18,7 +18,7 @@ if __name__ == '__main__':
     num_workers = 21 # odd number just to test the rounding
     username = sys.argv[1]
     pool = CondorKmeans(username, num_workers, os.getcwd(), 'data/test_centroids.csv', 'data/test_assignments.csv')
-    kmeans_assignments, centroids = pool.weighted_kmeans(points, np.ones(2), num_clusters, max_steps, num_threads,
+    pool.weighted_kmeans(points, np.ones(2), num_clusters, max_steps, num_threads,
                                                          pp_init=False, pp_reservoir_size=1000, pp_max=3)
 
     np.savetxt('data/test_data.csv', points, delimiter=',')

@@ -89,6 +89,7 @@ class CondorKmeans(object):
         dargs['aggjob_filename'] = '{job_dir}aggregate{step}'.format(**dargs)
         dargs['dagman_filename'] = '{job_dir}dag'.format(**dargs)
         dargs['finished_flag'] = '{output_dir}finished'.format(**dargs)
+        return dargs
 
     def weighted_kmeans(self, data, weights, k, max_steps, num_threads=4, centroids=None,
                         pp_init=False, pp_reservoir_size=None, pp_max=None):
