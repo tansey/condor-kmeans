@@ -19,7 +19,7 @@ getenv = True
 
 '''
 
-FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker $(workerid) $(step) {data_filename} {start} {end} {weights_filename} {data_dir}step$(step)_centroids.csv {assignments_dir}$(workerid).csv {mindistance_dir}$(workerid).csv {partial_centroids_dir}$(workerid).csv {partial_centroids_counts_dir}$(workerid).csv {finished_flag}
+FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker $(workerid) $(step) {data_filename} $(start) $(end) {weights_filename} {data_dir}step$(step)_centroids.csv {assignments_dir}$(workerid).csv {mindistance_dir}$(workerid).csv {partial_centroids_dir}$(workerid).csv {partial_centroids_counts_dir}$(workerid).csv {finished_flag}
 Output = {output_dir}find_nearest_cluster_$(workerid)_step$(step).out
 Error = {error_dir}find_nearest_cluster_$(workerid)_step$(step).err
 Queue 1
@@ -154,6 +154,8 @@ class CondorKmeans(object):
                     dagf.write('JOB {job_id} {jobs_filename}\n'.format(**dargs))
                     jobvars += 'VARS {job_id} workerid="{worker_id}"\n'.format(**dargs)
                     jobvars += 'VARS {job_id} step="{step}"\n'.format(**dargs)
+                    jobvars += 'VARS {job_id} start="{start}"\n'.format(**dargs)
+                    jobvars += 'VARS {job_id} end="{end}"\n'.format(**dargs)
                     parents += 'PARENT {job_id} CHILD AGG{step}\n'.format(**dargs)
                     if step < (self._max_steps-1):
                         dargs['next_step'] = step + 1
