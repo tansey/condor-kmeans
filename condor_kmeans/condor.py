@@ -347,7 +347,8 @@ def worker_main():
         exit(1)
 
     try:
-        print 'Writing min distances to {0}'.format(mindistance_outfile)
+        print 'Writing assignments to {0} (shape: {1})'.format(assignments, assignments.shape)
+        print 'Writing min distances to {0} (shape: {1})'.format(mindistance_outfile, min_distances.shape)
         np.savetxt(assignments_outfile, assignments, delimiter=',')
         np.savetxt(mindistance_outfile, min_distances, delimiter=',')
         np.savetxt(partial_centroids_outfile, partial_centroids, delimiter=',')
