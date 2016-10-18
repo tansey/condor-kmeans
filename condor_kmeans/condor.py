@@ -263,12 +263,12 @@ class CondorKmeans(object):
                 centroids_counts = next_counts
 
             # Clean up
-            os.remove(dargs['assignments_outfile'])
-            os.remove(dargs['mindistance_outfile'])
-            os.remove(dargs['partial_centroids_outfile'])
-            os.remove(dargs['partial_centroids_counts_outfile'])
-            os.remove(dargs['output_filename'])
-            os.remove(dargs['error_filename'])
+            # os.remove(dargs['assignments_outfile'])
+            # os.remove(dargs['mindistance_outfile'])
+            # os.remove(dargs['partial_centroids_outfile'])
+            # os.remove(dargs['partial_centroids_counts_outfile'])
+            # os.remove(dargs['output_filename'])
+            # os.remove(dargs['error_filename'])
 
         if assign:
             np.savetxt(dargs['aggregated_assignments_filename'], assignments, delimiter=',', fmt='%d')
