@@ -26,7 +26,7 @@ Queue 1
 
 '''
 
-AGGREGATE_JOB = '''Arguments = {python_filepath} aggregate {step} {data_filename} {username} {num_workers} {working_dir} {finished_flag} {final_centroids_outfile} {final_assignments_outfile}
+AGGREGATE_JOB = '''Arguments = {python_filepath} aggregate {step} {data_filename} {username} {num_workers} {working_dir} {max_steps} {finished_flag} {final_centroids_outfile} {final_assignments_outfile}
 Output = {agg_output_filename}
 Error = {agg_error_filename}
 Queue 1
@@ -35,7 +35,7 @@ Queue 1
 
 
 class CondorKmeans(object):
-    def __init__(self, username, num_workers, working_dir, final_centroids_outfile, final_assignments_outfile):
+    def __init__(self, username, num_workers, working_dir, final_centroids_outfile, final_assignments_outfile, max_steps=50):
         self._username = username
         self._num_workers = num_workers
         self._working_dir = working_dir
@@ -43,6 +43,7 @@ class CondorKmeans(object):
         self._data_dir = make_directory(self._base_dir, 'data')
         self._final_centroids_outfile = final_centroids_outfile
         self._final_assignments_outfile = final_assignments_outfile
+        self._max_steps = max_steps
 
     def _get_worker_ranges(self, data):
         # Figure out how many data points each worker should be working on
@@ -62,6 +63,7 @@ class CondorKmeans(object):
         dargs['num_workers'] = self._num_workers
         dargs['final_centroids_outfile'] = self._final_centroids_outfile
         dargs['final_assignments_outfile'] = self._final_assignments_outfile
+        dargs['max_steps'] = self._max_steps
         dargs['step'] = step
         dargs['worker_id'] = worker_id
         dargs['start'] = start
@@ -97,7 +99,7 @@ class CondorKmeans(object):
         dargs['finished_flag'] = '{output_dir}finished'.format(**dargs)
         return dargs
 
-    def weighted_kmeans(self, data, weights, k, max_steps, num_threads=4, centroids=None,
+    def weighted_kmeans(self, data, weights, k, num_threads=4, centroids=None,
                         pp_init=False, pp_reservoir_size=None, pp_max=None):
         dargs = self._get_dargs(0, data)
         # Get the location of the data
@@ -255,7 +257,7 @@ class CondorKmeans(object):
                 dargs = self._get_dargs(step-1, data)
                 prev_assignments = np.loadtxt(dargs['aggregated_assignments_filename'], delimiter=',')
                 # Check if we've converged to a local optimum.
-                if np.array_equal(prev_assignments, assignments):
+                if step == self._max_steps or np.array_equal(prev_assignments, assignments):
                     with open(dargs['finished_flag'], 'wb') as f:
                         f.write('Finished!')
 
@@ -356,9 +358,10 @@ def aggregate_main():
     username = sys.argv[4]
     num_workers = int(sys.argv[5])
     working_dir = sys.argv[6]
-    finished_flag = sys.argv[7]
-    final_centroids_outfile = sys.argv[8]
-    final_assignments_outfile = sys.argv[9]
+    max_steps = int(sys.argv[7])
+    finished_flag = sys.argv[8]
+    final_centroids_outfile = sys.argv[9]
+    final_assignments_outfile = sys.argv[10]
 
     if os.path.exists(finished_flag):
         exit(0)
@@ -372,7 +375,7 @@ def aggregate_main():
         exit(1)
 
     try:
-        pool = CondorKmeans(username, num_workers, working_dir, final_centroids_outfile, final_assignments_outfile)
+        pool = CondorKmeans(username, num_workers, working_dir, final_centroids_outfile, final_assignments_outfile, max_steps=max_steps)
 
         pool.check_workers_finished(step, data)
 
