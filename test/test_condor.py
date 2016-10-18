@@ -23,4 +23,4 @@ if __name__ == '__main__':
 
     np.savetxt('data/test_data.csv', points, delimiter=',')
     np.savetxt('data/test_true_clusters.csv', clusters, delimiter=',')
-    np.savetxt('data/test_true_points.csv', assignments, delimiter=',')
+    np.savetxt('data/test_true_assignments.csv', assignments, delimiter=',')
