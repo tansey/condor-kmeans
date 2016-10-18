@@ -103,16 +103,20 @@ class CondorKmeans(object):
 
     def weighted_kmeans(self, data, weights, k, num_threads=4, centroids=None,
                         pp_init=False, pp_reservoir_size=None, pp_max=None):
+        print 'Running kmeans on Condor'
         dargs = self._get_dargs(0, data)
         # Get the location of the data
         if data is not VectorStream:
+            print 'Saving data to file'
             # If we were given data in memory instead of in a stream, save it to file so it can be streamed
             np.savetxt(dargs['data_filename'], data, delimiter=',')
 
         # Write the weights to file
+        print 'Writing weights to file'
         np.savetxt(dargs['weights_filename'], weights, delimiter=',')
 
         # Write the worker job file
+        print 'Creating jobs files'
         with open(dargs['jobs_filename'], 'wb') as f:
             f.write(JOB_HEADER.format(**dargs))
             f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
@@ -123,6 +127,7 @@ class CondorKmeans(object):
             f.write(AGGREGATE_JOB.format(**dargs))
 
         # Get the start and end regions for each worker job
+        print 'Getting worker ranges'
         worker_ranges = self._get_worker_ranges(data)
 
 
@@ -134,13 +139,17 @@ class CondorKmeans(object):
                     with open(dargs['initjob_filename']):
                         raise Exception('K++ initialization with condor not implemented yet.') # TODO
             else:
+                print 'Selecting random points to initialize clusters'
                 # If not using Kmeans++, just randomly pick centroids (this seems to often work better)
                 from condor_kmeans.kmeans import choose_random_centroids
                 centroids = choose_random_centroids(data, k, stream=data is VectorStream)
                 np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
         else:
+            print 'Loading inital centroids from file'
             # If we're given some centroids, use those instead
             np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
+
+        print 'Creating DAG scripts'
 
         # Generate all the job scripts
         dag_parents = ''
