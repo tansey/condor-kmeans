@@ -15,6 +15,7 @@ distance and centroids.
 The word2vec dimensions have a single weight associated with them.
 '''
 import sys
+import os
 import numpy as np
 import numpy.ma as ma
 import collections
