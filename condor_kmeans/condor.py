@@ -157,15 +157,11 @@ class CondorKmeans(object):
                 if step < (self._max_steps-1):
                     dargs['next_step'] = step + 1
                     dag_parents += 'PARENT STEP{next_step} CHILD {job_id}\n'.format(**dargs)
-                
-                # Write all the dependencies
-                dagf.write(dag_jobvars)
-                dagf.write(dag_parents)
 
                 with open(dargs['subdag_filename'], 'wb') as subdagf:
                     # Write the sub-dag that handles each worker in a given step
                     for i, (start, end) in enumerate(worker_ranges):
-                        dargs = self._get_dargs(0, data, i, start, end)
+                        dargs = self._get_dargs(step, data, i, start, end)
                         # Open up a jobs file
                         dargs['subdag_job_id'] = 'FINDCLUSTERS{worker_id}'.format(**dargs)
                         subdagf.write('JOB {subdag_job_id} {jobs_filename}\n'.format(**dargs))
@@ -180,6 +176,10 @@ class CondorKmeans(object):
                     # Write all the dependencies
                     subdagf.write(subdag_jobvars)
                     subdagf.write(subdag_parents)
+
+            # Write all the dependencies
+            dagf.write(dag_jobvars)
+            dagf.write(dag_parents)
                 
 
         # Check if there is a leftover finished flag and remove it
