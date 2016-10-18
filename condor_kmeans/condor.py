@@ -38,6 +38,7 @@ class CondorKmeans(object):
     def __init__(self, username, num_workers, working_dir, final_centroids_outfile, final_assignments_outfile):
         self._username = username
         self._num_workers = num_workers
+        self._working_dir = working_dir
         self._base_dir = make_directory(working_dir, 'condor')
         self._data_dir = make_directory(self._base_dir, 'data')
         self._final_centroids_outfile = final_centroids_outfile
@@ -57,8 +58,10 @@ class CondorKmeans(object):
     def _get_dargs(self, step, data, worker_id=0, start=0, end=0):
         # Create a map for use in string formatting for the jobs file
         dargs = {'username': self._username, 'base_dir': self._base_dir, 'python_filepath': os.path.abspath(__file__) }
+        dargs['working_dir'] = self._working_dir
         dargs['num_workers'] = self._num_workers
-        dargs['working_dir'] = self._base_dir
+        dargs['final_centroids_outfile'] = self._final_centroids_outfile
+        dargs['final_assignments_outfile'] = self._final_assignments_outfile
         dargs['step'] = step
         dargs['worker_id'] = worker_id
         dargs['start'] = start
@@ -79,8 +82,6 @@ class CondorKmeans(object):
         dargs['partial_centroids_counts_dir'] = make_directory(self._data_dir, 'partial_centroids_counts')
         dargs['weights_filename'] = self._data_dir + 'weights.csv'
         dargs['centroids_filename'] = self._data_dir + 'step{step}_centroids.csv'.format(**dargs)
-        dargs['final_centroids_outfile'] = self._final_centroids_outfile
-        dargs['final_assignments_outfile'] = self._final_assignments_outfile
         dargs['assignments_outfile'] = '{assignments_dir}{worker_id}.csv'.format(**dargs)
         dargs['mindistance_outfile'] = '{mindistance_dir}{worker_id}.csv'.format(**dargs)
         dargs['partial_centroids_outfile'] = '{partial_centroids_dir}{worker_id}.csv'.format(**dargs)
