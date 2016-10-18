@@ -168,7 +168,7 @@ class CondorKmeans(object):
                     dargs = self._get_dargs(0, data, i, start, end)
                     # Open up a jobs file
                     dargs['subdag_job_id'] = 'FINDCLUSTERS{worker_id}'.format(**dargs)
-                    subdagf.write('JOB {subdag_job_id} {jobs_filename}\n')
+                    subdagf.write('JOB {subdag_job_id} {jobs_filename}\n'.format(**dargs))
                     subdag_jobvars += 'VARS {subdag_job_id} step="$(step)"\n'.format(**dargs)
                     subdag_jobvars += 'VARS {subdag_job_id} workerid="{worker_id}"\n'.format(**dargs)
                     subdag_jobvars += 'VARS {subdag_job_id} start="{start}"\n'.format(**dargs)
