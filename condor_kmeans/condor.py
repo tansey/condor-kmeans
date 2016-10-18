@@ -138,7 +138,7 @@ class CondorKmeans(object):
                     with open(dargs['jobs_filename'], 'wb') as f:
                         f.write(JOB_HEADER.format(**dargs))
                         f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
-                        dagf.write('JOB FINDCLUSTERS{step} {jobs_filename}\n'.format(**dargs))
+                        dagf.write('JOB FINDCLUSTERS{step}WORKER{worker_id} {jobs_filename}\n'.format(**dargs))
                         parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{step}WORKER{worker_id}\n'.format(**dargs)
 
                 with open(dargs['aggjob_filename'], 'wb') as f:
