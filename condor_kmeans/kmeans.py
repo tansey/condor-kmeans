@@ -22,7 +22,7 @@ import argparse
 import csv
 from multiprocessing import Pool
 from condor_kmeans.vector import VectorStream
-from condor_kmeans.condor import condor_find_nearest_cluster
+from condor_kmeans.condor import CondorKmeans
 
 def calc_distances(x, centroids, weights):
     '''
@@ -120,9 +120,7 @@ def down_sample(data, reservoir_size):
 
     return (ma.masked_array(reservoir), reservoir_ids)
 
-def kmeans_plusplus_init(data, weights, k, num_threads, reservoir_size=None, max_steps=None,
-                         condor=False, condor_username=None, condor_workers=1500,
-                         condor_pollwait=30):
+def kmeans_plusplus_init(data, weights, k, num_threads, reservoir_size=None, max_steps=None):
     # Sanity checks
     assert(max_steps is None or max_steps > 1)
     assert(reservoir_size is None or reservoir_size > k)
@@ -157,10 +155,7 @@ def kmeans_plusplus_init(data, weights, k, num_threads, reservoir_size=None, max
     while len(centroids) < k and (max_steps is None or cur_cluster < max_steps):
         print '\tCreating centroid #{0}'.format(len(centroids))
 
-        if condor:
-            distances = condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, condor_workers, 0, polling_delay=condor_pollwait, assign=False)
-        else:
-            distances = parallel_find_nearest_cluster(data, weights, centroids, assignments, num_threads, 0, assign=False)
+        distances = parallel_find_nearest_cluster(data, weights, centroids, assignments, num_threads, 0, assign=False)
 
         # Only use distances from the available centroid candidates
         distances = distances[available]
@@ -255,6 +250,19 @@ def streaming_choose_initial_centroids(data, chosen):
                 break
     return np.ma.masked_array(results, mask=[x.mask for x in results])
 
+def choose_random_centroids(data, k, stream=False):
+    # Choose the k centroids.
+    chosen = np.array(sorted(np.random.choice(len(data), k, replace=False)))
+    # Create the centroids.
+    if stream:
+        centroids = streaming_choose_initial_centroids(data, chosen)
+    else:
+        centroids = ma.masked_array(data[chosen], mask=data.mask[chosen])
+    # Set missing dimensions to zero, since we assume all dimensions
+    # are standardized to zero-mean.
+    centroids[centroids.mask == True] = 0.
+    return centroids
+
 def weighted_kmeans(data, weights, k, max_steps, num_threads=4, centroids=None,
                     print_freq=50000, stream=False, pp_init=False,
                     pp_reservoir_size=None, pp_max=None, condor=False,
@@ -274,26 +282,10 @@ def weighted_kmeans(data, weights, k, max_steps, num_threads=4, centroids=None,
         if pp_init:
             assignments, centroids = kmeans_plusplus_init(data, weights, k, num_threads,
                                                           reservoir_size=pp_reservoir_size,
-                                                          max_steps=pp_max,
-                                                          condor=condor,
-                                                          condor_username=condor_username,
-                                                          condor_workers=condor_workers,
-                                                          condor_pollwait=condor_pollwait)
+                                                          max_steps=pp_max)
         else:
             print '\tChoosing initial centroids randomly'
-            # Choose the k centroids.
-            chosen = np.array(sorted(np.random.choice(len(data), k, replace=False)))
-
-            # Track the assignments.
-            assignments[chosen] = np.arange(k)
-            # Create the centroids.
-            if stream:
-                centroids = streaming_choose_initial_centroids(data, chosen)
-            else:
-                centroids = ma.masked_array(data[chosen], mask=data.mask[chosen])
-            # Set missing dimensions to zero, since we assume all dimensions
-            # are standardized to zero-mean.
-            centroids[centroids.mask == True] = 0.
+            centroids = choose_random_centroids(data, k, stream)
         
     # Track the last iteration's assignments to determine if we've converged.
     prev_assignments = np.copy(assignments)
@@ -303,23 +295,19 @@ def weighted_kmeans(data, weights, k, max_steps, num_threads=4, centroids=None,
         print '\tIteration #{0}'.format(step+1)
 
         # Find the assignments for each of the data points
-        if condor:
-            condor_find_nearest_cluster(condor_username, data, weights, centroids, assignments, condor_workers, step, polling_delay=condor_pollwait)
-            print 'Centroids: {0}'.format(centroids.shape)
+        parallel_find_nearest_cluster(data, weights, centroids, assignments, num_threads, step)
+        # Recalculate all the cluster centroids
+        if stream:
+            # If we're streaming, it means we want to minimize loops over the data
+            centroids = streaming_centroids(data, assignments, k)
         else:
-            parallel_find_nearest_cluster(data, weights, centroids, assignments, num_threads, step)
-            # Recalculate all the cluster centroids
-            if stream:
-                # If we're streaming, it means we want to minimize loops over the data
-                centroids = streaming_centroids(data, assignments, k)
-            else:
-                for i in xrange(k):
-                    # Take the mean of every dimension.
-                    centroids[i] = data[assignments==i].mean(axis=0)
+            for i in xrange(k):
+                # Take the mean of every dimension.
+                centroids[i] = data[assignments==i].mean(axis=0)
 
-            # Set missing dimensions to zero, since we assume all dimensions
-            # are standardized to zero-mean.
-            centroids[centroids.mask] = 0.
+        # Set missing dimensions to zero, since we assume all dimensions
+        # are standardized to zero-mean.
+        centroids[centroids.mask] = 0.
 
         print 'First few assignments: {0}'.format(assignments[0:20])
         print 'Cluster sizes: {0}'.format(np.bincount(assignments))
@@ -392,20 +380,28 @@ def main():
         centroids = None
 
     print 'Clustering vectors'
-    assignments, centroids = weighted_kmeans(vectors, weights, args.num_clusters,
+    if args.condor:
+        from condor_kmeans.condor import CondorKmeans
+        pool = CondorKmeans(args.condor_username, args.condor_workers, os.getcwd(), args.cluster_centroids_outfile, args.cluster_assignments_outfile)
+
+        print 'Submitting Condor DAG jobs with maximum of {0} iterations'.format(args.max_steps)
+        pool.weighted_kmeans(vectors, weights, args.num_clusters,
                                              args.max_steps, args.num_threads,
                                              stream=args.stream, pp_init=args.plusplus,
                                              centroids=centroids,
-                                             pp_reservoir_size=args.pp_reservoir, pp_max=args.pp_max,
-                                             condor=args.condor, condor_username=args.condor_username,
-                                             condor_workers=args.condor_workers,
-                                             condor_pollwait=args.condor_pollwait)
+                                             pp_reservoir_size=args.pp_reservoir, pp_max=args.pp_max)
+    else:
+        assignments, centroids = weighted_kmeans(vectors, weights, args.num_clusters,
+                                             args.max_steps, args.num_threads,
+                                             stream=args.stream, pp_init=args.plusplus,
+                                             centroids=centroids,
+                                             pp_reservoir_size=args.pp_reservoir, pp_max=args.pp_max)
     
-    print 'Saving cluster centroids to {0}'.format(args.cluster_centroids_outfile)
-    np.savetxt(args.cluster_centroids_outfile, centroids, delimiter=',')
+        print 'Saving cluster centroids to {0}'.format(args.cluster_centroids_outfile)
+        np.savetxt(args.cluster_centroids_outfile, centroids, delimiter=',')
 
-    print 'Saving assignments to {0}'.format(args.cluster_assignments_outfile)
-    np.savetxt(args.cluster_assignments_outfile, assignments, delimiter=',', fmt='%d')
+        print 'Saving assignments to {0}'.format(args.cluster_assignments_outfile)
+        np.savetxt(args.cluster_assignments_outfile, assignments, delimiter=',', fmt='%d')
 
 
 if __name__ == '__main__':
