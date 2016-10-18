@@ -117,7 +117,7 @@ class CondorKmeans(object):
                             pass # TODO
                 else:
                     # If not using Kmeans++, just randomly pick centroids (this seems to often work better)
-                    from condor_kmeans.clustering.kmeans import choose_random_centroids
+                    from condor_kmeans.kmeans import choose_random_centroids
                     centroids = choose_random_centroids(data, k, stream)
                     np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
             else:
@@ -297,7 +297,7 @@ def worker_main():
 
     try:
         # Reuse the local kmeans nearest-cluster routine
-        from condor_kmeans.clustering.kmeans import find_nearest_cluster
+        from condor_kmeans.kmeans import find_nearest_cluster
         all_params = (step, data, start, end, weights, centroids, assignments, worker_id)
         (worker_id, assignments, min_distances) = find_nearest_cluster(all_params)
     except Exception as ex:
