@@ -373,7 +373,7 @@ def aggregate_main():
 
         pool.check_workers_finished(step, data)
 
-        pool.aggregate_worker_results(step, data, weights, assign=True)
+        pool.aggregate_worker_results(step, data, assign=True)
     except Exception as ex:
         print traceback.format_exc()
         print 'Error aggregating worker results: {0}'.format(ex)
