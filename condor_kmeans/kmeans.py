@@ -356,7 +356,7 @@ def main():
     parser.add_argument('--condor', dest='condor', action='store_true', help='Use condor to run distributed k-means.')
     parser.add_argument('--condor_username', default='', help='Your username on condor.')
     parser.add_argument('--condor_workers', type=int, default=1500, help='The number of condor jobs to run at once.')
-    parser.add_argument('--condor_pollwait', type=int, default=30, help='The number of seconds to wait between polling for condor jobs being finished.')
+    #parser.add_argument('--condor_pollwait', type=int, default=30, help='The number of seconds to wait between polling for condor jobs being finished.')
 
     parser.set_defaults(stream=False, plusplus=False, condor=False)
 
@@ -382,14 +382,16 @@ def main():
     print 'Clustering vectors'
     if args.condor:
         from condor_kmeans.condor import CondorKmeans
-        pool = CondorKmeans(args.condor_username, args.condor_workers, os.getcwd(), args.cluster_centroids_outfile, args.cluster_assignments_outfile)
+        pool = CondorKmeans(args.condor_username, args.condor_workers, os.getcwd(),
+                            args.cluster_centroids_outfile, args.cluster_assignments_outfile
+                            max_steps=args.max_steps)
 
         print 'Submitting Condor DAG jobs with maximum of {0} iterations'.format(args.max_steps)
         pool.weighted_kmeans(vectors, weights, args.num_clusters,
-                                             args.max_steps, args.num_threads,
-                                             stream=args.stream, pp_init=args.plusplus,
-                                             centroids=centroids,
-                                             pp_reservoir_size=args.pp_reservoir, pp_max=args.pp_max)
+                             args.num_threads,
+                             stream=args.stream, pp_init=args.plusplus,
+                             centroids=centroids,
+                             pp_reservoir_size=args.pp_reservoir, pp_max=args.pp_max)
     else:
         assignments, centroids = weighted_kmeans(vectors, weights, args.num_clusters,
                                              args.max_steps, args.num_threads,
