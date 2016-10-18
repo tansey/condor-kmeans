@@ -27,8 +27,8 @@ Queue 1
 '''
 
 AGGREGATE_JOB = '''Arguments = {python_filepath} aggregate {step} {data_filename} {username} {num_workers} {working_dir} {finished_flag} {final_centroids_outfile} {final_assignments_outfile}
-Output = {output_filename}
-Error = {error_filename}
+Output = {agg_output_filename}
+Error = {agg_error_filename}
 Queue 1
 
 '''
@@ -89,6 +89,8 @@ class CondorKmeans(object):
         dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}_step{step}.out'.format(**dargs)
         dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}_step{step}.err'.format(**dargs)
         dargs['jobs_filename'] = '{job_dir}find_nearest_cluster_jobs_step{step}'.format(**dargs)
+        dargs['agg_output_filename'] = '{output_dir}aggregate_{worker_id}_step{step}.out'.format(**dargs)
+        dargs['agg_error_filename'] = '{error_dir}aggregate_{worker_id}_step{step}.err'.format(**dargs)
         dargs['aggjob_filename'] = '{job_dir}aggregate{step}'.format(**dargs)
         dargs['dagman_filename'] = '{job_dir}dag'.format(**dargs)
         dargs['finished_flag'] = '{output_dir}finished'.format(**dargs)
