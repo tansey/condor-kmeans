@@ -139,7 +139,10 @@ class CondorKmeans(object):
                         f.write(JOB_HEADER.format(**dargs))
                         f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
                         dagf.write('JOB FINDCLUSTERS{step}WORKER{worker_id} {jobs_filename}\n'.format(**dargs))
-                        parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{step}WORKER{worker_id}\n'.format(**dargs)
+                        parents += 'PARENT FINDCLUSTERS{step}WORKER{worker_id} CHILD AGG{step}\n'.format(**dargs)
+                        if step < (max_steps-1):
+                            dargs['next_step'] = step + 1
+                            parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{next_step}WORKER{worker_id}\n'.format(**dargs)
 
                 with open(dargs['aggjob_filename'], 'wb') as f:
                     # Write the header to the top of the file
