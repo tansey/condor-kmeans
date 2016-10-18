@@ -358,10 +358,6 @@ def aggregate_main():
 
     try:
         data = VectorStream(data_filename)
-        weights = np.loadtxt(weights_filename, delimiter=',')
-        
-        if len(centroids.shape) == 1:
-            centroids = centroids[:, np.newaxis].T
     except Exception as ex:
         print traceback.format_exc()
         print 'Error loading files: {0}'.format(ex)
