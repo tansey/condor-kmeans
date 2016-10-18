@@ -57,6 +57,8 @@ class CondorKmeans(object):
     def _get_dargs(self, step, data, worker_id=0, start=0, end=0):
         # Create a map for use in string formatting for the jobs file
         dargs = {'username': self._username, 'base_dir': self._base_dir, 'python_filepath': os.path.abspath(__file__) }
+        dargs['num_workers'] = self._num_workers
+        dargs['working_dir'] = self._base_dir
         dargs['step'] = step
         dargs['worker_id'] = worker_id
         dargs['start'] = start
