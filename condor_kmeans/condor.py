@@ -263,7 +263,7 @@ class CondorKmeans(object):
 
                     # Save the clustering results to their final destinations
                     np.savetxt(dargs['final_centroids_outfile'], centroids, delimiter=',')
-                    np.savetxt(dargs['final_assignments_outfile'], assignments, delimiter=',')
+                    np.savetxt(dargs['final_assignments_outfile'], assignments, delimiter=',', fmt='%d')
                     
                     # If we had to write the data to file, delete the temp file
                     if data is not VectorStream:
