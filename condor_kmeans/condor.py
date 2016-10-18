@@ -257,7 +257,7 @@ class CondorKmeans(object):
                 dargs = self._get_dargs(step-1, data)
                 prev_assignments = np.loadtxt(dargs['aggregated_assignments_filename'], delimiter=',')
                 # Check if we've converged to a local optimum.
-                if step == self._max_steps or np.array_equal(prev_assignments, assignments):
+                if step == (self._max_steps-1) or np.array_equal(prev_assignments, assignments):
                     with open(dargs['finished_flag'], 'wb') as f:
                         f.write('Finished!')
 
