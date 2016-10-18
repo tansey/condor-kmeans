@@ -383,7 +383,7 @@ def main():
     if args.condor:
         from condor_kmeans.condor import CondorKmeans
         pool = CondorKmeans(args.condor_username, args.condor_workers, os.getcwd(),
-                            args.cluster_centroids_outfile, args.cluster_assignments_outfile
+                            args.cluster_centroids_outfile, args.cluster_assignments_outfile,
                             max_steps=args.max_steps)
 
         print 'Submitting Condor DAG jobs with maximum of {0} iterations'.format(args.max_steps)
