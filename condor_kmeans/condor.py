@@ -19,16 +19,16 @@ getenv = True
 
 '''
 
-FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker {worker_id} {step} {data_filename} {start} {end} {weights_filename} {centroids_filename} {assignments_outfile} {mindistance_outfile} {partial_centroids_outfile} {partial_centroids_counts_outfile} {finished_flag}
-Output = {output_filename}
-Error = {error_filename}
+FIND_CLUSTER_MAP_JOB = '''Arguments = {python_filepath} worker $(workerid) $(step) {data_filename} {start} {end} {weights_filename} {centroids_filename} {assignments_outfile} {mindistance_outfile} {partial_centroids_outfile} {partial_centroids_counts_outfile} {finished_flag}
+Output = {output_dir}find_nearest_cluster_$(workerid)_step$(step).out
+Error = {error_dir}find_nearest_cluster_$(workerid)_step$(step).err
 Queue 1
 
 '''
 
-AGGREGATE_JOB = '''Arguments = {python_filepath} aggregate {step} {data_filename} {username} {num_workers} {working_dir} {max_steps} {finished_flag} {final_centroids_outfile} {final_assignments_outfile}
-Output = {agg_output_filename}
-Error = {agg_error_filename}
+AGGREGATE_JOB = '''Arguments = {python_filepath} aggregate $(step) {data_filename} {username} {num_workers} {working_dir} {max_steps} {finished_flag} {final_centroids_outfile} {final_assignments_outfile}
+Output = {output_dir}aggregate_step$(step).out
+Error = {error_dir}aggregate_step$(step).err
 Queue 1
 
 '''
@@ -91,10 +91,10 @@ class CondorKmeans(object):
         dargs['partial_centroids_counts_outfile'] = '{partial_centroids_counts_dir}{worker_id}.csv'.format(**dargs)
         dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}_step{step}.out'.format(**dargs)
         dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}_step{step}.err'.format(**dargs)
-        dargs['jobs_filename'] = '{job_dir}find_nearest_cluster_jobs_step{step}_worker{worker_id}'.format(**dargs)
+        dargs['jobs_filename'] = '{job_dir}find_nearest_cluster_jobs'.format(**dargs)
         dargs['agg_output_filename'] = '{output_dir}aggregate_step{step}.out'.format(**dargs)
         dargs['agg_error_filename'] = '{error_dir}aggregate_step{step}.err'.format(**dargs)
-        dargs['aggjob_filename'] = '{job_dir}aggregate{step}'.format(**dargs)
+        dargs['aggjob_filename'] = '{job_dir}aggregate'.format(**dargs)
         dargs['dagman_filename'] = '{job_dir}dag'.format(**dargs)
         dargs['finished_flag'] = '{output_dir}finished'.format(**dargs)
         return dargs
@@ -110,11 +110,22 @@ class CondorKmeans(object):
         # Write the weights to file
         np.savetxt(dargs['weights_filename'], weights, delimiter=',')
 
+        # Write the worker job file
+        with open(dargs['jobs_filename'], 'wb') as f:
+            f.write(JOB_HEADER.format(**dargs))
+            f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
+
+        # Write the master aggregation job file
+        with open(dargs['aggjob_filename'], 'wb') as f:
+            f.write(JOB_HEADER.format(**dargs))
+            f.write(AGGREGATE_JOB.format(**dargs))
+
         # Get the start and end regions for each worker job
         worker_ranges = self._get_worker_ranges(data)
 
         # Generate all the job scripts
         parents = ''
+        jobvars = ''
         with open(dargs['dagman_filename'], 'wb') as dagf:
             # Create the initial centroids if none are given
             if centroids is None:
@@ -138,26 +149,21 @@ class CondorKmeans(object):
                 for i, (start, end) in enumerate(worker_ranges):
                     dargs = self._get_dargs(step, data, i, start, end)
                     # Open up a jobs file
-                    with open(dargs['jobs_filename'], 'wb') as f:
-                        f.write(JOB_HEADER.format(**dargs))
-                        f.write(FIND_CLUSTER_MAP_JOB.format(**dargs))
-                        dagf.write('JOB FINDCLUSTERS{step}WORKER{worker_id} {jobs_filename}\n'.format(**dargs))
-                        parents += 'PARENT FINDCLUSTERS{step}WORKER{worker_id} CHILD AGG{step}\n'.format(**dargs)
-                        if step < (self._max_steps-1):
-                            dargs['next_step'] = step + 1
-                            parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{next_step}WORKER{worker_id}\n'.format(**dargs)
-
-                with open(dargs['aggjob_filename'], 'wb') as f:
-                    # Write the header to the top of the file
-                    f.write(JOB_HEADER.format(**dargs))
-
-                    # Write the aggregate job to file
-                    f.write(AGGREGATE_JOB.format(**dargs))
+                    dargs['job_id'] = 'FINDCLUSTERS{step}WORKER{worker_id}'.format(**dargs)
+                    dagf.write('JOB {job_id} {jobs_filename}\n'.format(**dargs))
+                    jobvars += 'VARS {job_id} workerid="{worker_id}"\n'.format(**dargs)
+                    jobvars += 'VARS {job_id} step="{step}"\n'.format(**dargs)
+                    parents += 'PARENT {job_id} CHILD AGG{step}\n'.format(**dargs)
+                    if step < (self._max_steps-1):
+                        dargs['next_step'] = step + 1
+                        parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{next_step}WORKER{worker_id}\n'.format(**dargs)
 
                 dagf.write('JOB AGG{step} {aggjob_filename}\n'.format(**dargs))
+                jobvars += 'VARS AGG{step} step="{step}"\n'.format(**dargs)
                 
 
             # Write all the dependencies
+            dagf.write(jobvars)
             dagf.write(parents)
 
         # Check if there is a leftover finished flag and remove it
