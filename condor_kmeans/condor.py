@@ -249,7 +249,7 @@ class CondorKmeans(object):
             # os.remove(dargs['error_filename'])
 
         if assign:
-            np.savetxt(dargs['aggregated_assignments_filename'], assignments, delimiter=',')
+            np.savetxt(dargs['aggregated_assignments_filename'], assignments, delimiter=',', fmt='%d')
             dargs = self._get_dargs(step+1, data)
             np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
 
