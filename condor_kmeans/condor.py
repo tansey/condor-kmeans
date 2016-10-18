@@ -118,7 +118,7 @@ class CondorKmeans(object):
                 else:
                     # If not using Kmeans++, just randomly pick centroids (this seems to often work better)
                     from condor_kmeans.kmeans import choose_random_centroids
-                    centroids = choose_random_centroids(data, k, stream)
+                    centroids = choose_random_centroids(data, k, stream=data is VectorStream)
                     np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
             else:
                 # If we're given some centroids, use those instead
