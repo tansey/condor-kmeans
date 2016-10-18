@@ -6,7 +6,8 @@ import numpy as np
 if __name__ == '__main__':
     cluster_colors = ['blue', 'orange', 'purple', 'goldenrod', 'pink']
     points = np.loadtxt('data/test_data.csv', delimiter=',')
-    clusters = np.loadtxt('data/test_truth.csv', delimiter=',')
+    clusters = np.loadtxt('data/test_true_clusters.csv', delimiter=',')
+    assignments = np.loadtxt('data/test_true_assignments.csv', delimiter=',')
     centroids = np.loadtxt('data/test_centroids.csv', delimiter=',')
     kmeans_assignments = np.loadtxt('data/test_assignments.csv', delimiter=',', dtype=int)
     plt.scatter(points[:,0], points[:,1], alpha=0.5, color=[cluster_colors[i] for i in kmeans_assignments])

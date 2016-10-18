@@ -22,4 +22,5 @@ if __name__ == '__main__':
                                                          pp_init=False, pp_reservoir_size=1000, pp_max=3)
 
     np.savetxt('data/test_data.csv', points, delimiter=',')
-    np.savetxt('data/test_truth.csv', clusters, delimiter=',')
+    np.savetxt('data/test_true_clusters.csv', clusters, delimiter=',')
+    np.savetxt('data/test_true_points.csv', assignments, delimiter=',')
