@@ -97,6 +97,7 @@ class CondorKmeans(object):
         dargs['agg_error_filename'] = '{error_dir}aggregate_step{step}.err'.format(**dargs)
         dargs['aggjob_filename'] = '{job_dir}aggregate'.format(**dargs)
         dargs['dagman_filename'] = '{job_dir}dag'.format(**dargs)
+        dargs['subdag_filename'] = '{job_dir}subdag'.format(**dargs)
         dargs['finished_flag'] = '{output_dir}finished'.format(**dargs)
         return dargs
 
@@ -125,49 +126,61 @@ class CondorKmeans(object):
         worker_ranges = self._get_worker_ranges(data)
 
         # Generate all the job scripts
-        parents = ''
-        jobvars = ''
+        dag_parents = ''
+        dag_jobvars = ''
+        subdag_parents = ''
+        subdag_jobvars = ''
         with open(dargs['dagman_filename'], 'wb') as dagf:
-            # Create the initial centroids if none are given
-            if centroids is None:
-                # Use Kmeans++ initialization
-                if pp_init:
-                    for step in xrange(k if pp_max is None else min(k, pp_max)):
-                        with open(dargs['initjob_filename']):
-                            pass # TODO
+            with open(dargs['subdag_filename'], 'wb') as subdagf:
+                # Create the initial centroids if none are given
+                if centroids is None:
+                    # Use Kmeans++ initialization
+                    if pp_init:
+                        for step in xrange(k if pp_max is None else min(k, pp_max)):
+                            with open(dargs['initjob_filename']):
+                                pass # TODO
+                    else:
+                        # If not using Kmeans++, just randomly pick centroids (this seems to often work better)
+                        from condor_kmeans.kmeans import choose_random_centroids
+                        centroids = choose_random_centroids(data, k, stream=data is VectorStream)
+                        np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
                 else:
-                    # If not using Kmeans++, just randomly pick centroids (this seems to often work better)
-                    from condor_kmeans.kmeans import choose_random_centroids
-                    centroids = choose_random_centroids(data, k, stream=data is VectorStream)
+                    # If we're given some centroids, use those instead
                     np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
-            else:
-                # If we're given some centroids, use those instead
-                np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
 
-            for step in xrange(self._max_steps):
-                dargs = self._get_dargs(step, data)
-                # Write each worker's job to file
-                for i, (start, end) in enumerate(worker_ranges):
-                    dargs = self._get_dargs(step, data, i, start, end)
-                    # Open up a jobs file
-                    dargs['job_id'] = 'FINDCLUSTERS{step}WORKER{worker_id}'.format(**dargs)
-                    dagf.write('JOB {job_id} {jobs_filename}\n'.format(**dargs))
-                    jobvars += 'VARS {job_id} workerid="{worker_id}"\n'.format(**dargs)
-                    jobvars += 'VARS {job_id} step="{step}"\n'.format(**dargs)
-                    jobvars += 'VARS {job_id} start="{start}"\n'.format(**dargs)
-                    jobvars += 'VARS {job_id} end="{end}"\n'.format(**dargs)
-                    parents += 'PARENT {job_id} CHILD AGG{step}\n'.format(**dargs)
+                # Write the top-level dag for the steps
+                for step in xrange(self._max_steps):
+                    dargs = self._get_dargs(step, data)
+                    dargs['job_id'] = 'STEP{step}'.format(**dargs)
+                    dagf.write('SUBDAG EXTERNAL {job_id} {subdag_filename}\n'.format(**dargs))
+                    dag_jobvars += 'VARS {job_id} step="{step}"\n'.format(**dargs)
                     if step < (self._max_steps-1):
                         dargs['next_step'] = step + 1
-                        parents += 'PARENT AGG{step} CHILD FINDCLUSTERS{next_step}WORKER{worker_id}\n'.format(**dargs)
+                        dag_parents += 'PARENT STEP{next_step} {job_id}\n'.format(**dargs)
+                    
 
-                dagf.write('JOB AGG{step} {aggjob_filename}\n'.format(**dargs))
-                jobvars += 'VARS AGG{step} step="{step}"\n'.format(**dargs)
+                # Write all the dependencies
+                dagf.write(dag_jobvars)
+                dagf.write(dag_parents)
+
+                # Write the sub-dag that handles each worker in a given step
+                for i, (start, end) in enumerate(worker_ranges):
+                    dargs = self._get_dargs(0, data, i, start, end)
+                    # Open up a jobs file
+                    dargs['subdag_job_id'] = 'FINDCLUSTERS{worker_id}'.format(**dargs)
+                    subdagf.write('JOB {subdag_job_id} {jobs_filename}')
+                    subdag_jobvars += 'VARS {subdag_job_id} step="$(step)"\n'.format(**dargs)
+                    subdag_jobvars += 'VARS {subdag_job_id} workerid="{worker_id}"\n'.format(**dargs)
+                    subdag_jobvars += 'VARS {subdag_job_id} start="{start}"\n'.format(**dargs)
+                    subdag_jobvars += 'VARS {subdag_job_id} end="{end}"\n'.format(**dargs)
+                    dag_parents += 'PARENT {subdag_job_id} CHILD AGG\n'.format(**dargs)
+                subdagf.write('JOB AGG {aggjob_filename}\n'.format(**dargs))
+                subdag_jobvars += 'VARS AGG step="$(step)"\n'.format(**dargs)
+
+                # Write all the dependencies
+                subdagf.write(subdag_jobvars)
+                subdagf.write(subdag_parents)
                 
-
-            # Write all the dependencies
-            dagf.write(jobvars)
-            dagf.write(parents)
 
         # Check if there is a leftover finished flag and remove it
         if os.path.exists(dargs['finished_flag']):
