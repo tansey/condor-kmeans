@@ -85,8 +85,8 @@ class CondorKmeans(object):
         dargs['mindistance_outfile'] = '{mindistance_dir}{worker_id}.csv'.format(**dargs)
         dargs['partial_centroids_outfile'] = '{partial_centroids_dir}{worker_id}.csv'.format(**dargs)
         dargs['partial_centroids_counts_outfile'] = '{partial_centroids_counts_dir}{worker_id}.csv'.format(**dargs)
-        dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}.out'.format(**dargs)
-        dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}.err'.format(**dargs)
+        dargs['output_filename'] = '{output_dir}find_nearest_cluster_{worker_id}_step{step}.out'.format(**dargs)
+        dargs['error_filename'] = '{error_dir}find_nearest_cluster_{worker_id}_step{step}.err'.format(**dargs)
         dargs['jobs_filename'] = '{job_dir}find_nearest_cluster_jobs_step{step}'.format(**dargs)
         dargs['aggjob_filename'] = '{job_dir}aggregate{step}'.format(**dargs)
         dargs['dagman_filename'] = '{job_dir}dag'.format(**dargs)
@@ -233,12 +233,12 @@ class CondorKmeans(object):
                 centroids_counts = next_counts
 
             # Clean up
-            os.remove(dargs['assignments_outfile'])
-            os.remove(dargs['mindistance_outfile'])
-            os.remove(dargs['partial_centroids_outfile'])
-            os.remove(dargs['partial_centroids_counts_outfile'])
-            os.remove(dargs['output_filename'])
-            os.remove(dargs['error_filename'])
+            # os.remove(dargs['assignments_outfile'])
+            # os.remove(dargs['mindistance_outfile'])
+            # os.remove(dargs['partial_centroids_outfile'])
+            # os.remove(dargs['partial_centroids_counts_outfile'])
+            # os.remove(dargs['output_filename'])
+            # os.remove(dargs['error_filename'])
 
         if assign:
             np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
