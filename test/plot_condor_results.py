@@ -1,7 +1,7 @@
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pylab as plt
-
+import numpy as np
 
 if __name__ == '__main__':
     points = np.loadtxt('data/test_data.csv', delimiter=',')
