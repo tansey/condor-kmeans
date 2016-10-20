@@ -142,7 +142,7 @@ class CondorKmeans(object):
                 print 'Selecting random points to initialize clusters'
                 # If not using Kmeans++, just randomly pick centroids (this seems to often work better)
                 from condor_kmeans.kmeans import choose_random_centroids
-                centroids = choose_random_centroids(data, k, stream=data is VectorStream)
+                centroids = choose_random_centroids(data, k, stream=type(data) is VectorStream)
                 np.savetxt(dargs['centroids_filename'], centroids, delimiter=',')
         else:
             print 'Loading inital centroids from file'
